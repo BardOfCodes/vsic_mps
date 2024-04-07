@@ -8,6 +8,7 @@ import csv
 import mesh2sdf
 import scipy
 import geolipi.symbolic as gls
+import _pickle as cPickle
 
 
 # DATA_DIR = "/media/aditya/OS/data/compat"
@@ -17,7 +18,7 @@ SPLIT_FILE = "/users/aganesh8/data/aganesh8/projects/challenge/vsic/metadata/vsi
 
 MODE = "valid"
 SCALE_FACTOR = 1.75
-RESOLUTION = 64
+RESOLUTION = 100# use 100 as done in the original code.
 file_path = os.path.dirname(os.path.abspath(__file__))
 MATLAB_DIR = os.path.join(file_path, "MATLAB")
 BASE_CSV_PATH = os.path.join(MATLAB_DIR, "temp.csv")
@@ -99,15 +100,14 @@ def main(args):
 
         expression = params_to_geolipi(params, mode=args.prim_mode)
         expression = expression.cpu().sympy()
-        expression_str = str(expression)
-        all_exprs.append(expression_str)
-        break
-    # save it as a json
-    with open(args.predictions_file, "w") as f:
-        json.dump(all_exprs, f)
+        # expression_str = str(expression)
+        all_exprs.append(expression)
+        # break
+    # save it as pkl file
+    cPickle.dump(all_exprs, open(args.predictions_file, 'wb'))
 
     if args.timing_file is None:
-        timing_file = args.predictions_file.replace(".json", "_timing.json")
+        timing_file = args.predictions_file.replace(".pkl", "_timing.json")
     else:
         timing_file = args.timing_file
     with open(timing_file, "w") as f:
@@ -127,7 +127,7 @@ def params_to_geolipi(params, mode="sq"):
         cuboid_params = cur_param[2:5]
         cuboid_params = tuple(cuboid_params.tolist())
         # Rotation is tricky!
-        rotation_params = cur_param[5:8][::-1]
+        rotation_params = -cur_param[5:8][::-1]
 
         translate_params = cur_param[8:11]
         epsilon_1 = tuple(epsilon_1.tolist())
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     parser.add_argument("--mode", type=str, default=MODE)
     parser.add_argument("--csv_path", type=str, default=BASE_CSV_PATH)
     parser.add_argument("--mat_file", type=str, default=BASE_MAT_PATH)
-    parser.add_argument("--predictions_file", type=str)
+    parser.add_argument("--predictions_file", default='final_expressions.pkl', type=str)
     parser.add_argument("--timing_file", type=str, default=None)
     args = parser.parse_args()
 
