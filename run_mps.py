@@ -16,9 +16,9 @@ import _pickle as cPickle
 DATA_DIR = "/users/aganesh8/data/aganesh8/data/compat"
 SPLIT_FILE = "/users/aganesh8/data/aganesh8/projects/challenge/vsic/metadata/vsic_split.json"
 
-MODE = "valid"
+MODE = "test"
 SCALE_FACTOR = 1.75
-RESOLUTION = 100# use 100 as done in the original code.
+RESOLUTION = 100
 file_path = os.path.dirname(os.path.abspath(__file__))
 MATLAB_DIR = os.path.join(file_path, "MATLAB")
 BASE_CSV_PATH = os.path.join(MATLAB_DIR, "temp.csv")
@@ -52,6 +52,20 @@ def main(args):
     with open(args.split_file, "r") as f:
         split = json.load(f)
     all_models = split[args.mode]
+
+    all_exprs, stats = inner_loop(args, mat_func, all_models)
+        # break
+    # save it as pkl file
+    cPickle.dump(all_exprs, open(args.predictions_file, 'wb'))
+
+    if args.timing_file is None:
+        timing_file = args.predictions_file.replace(".pkl", "_timing.json")
+    else:
+        timing_file = args.timing_file
+    with open(timing_file, "w") as f:
+        json.dump(stats, f)
+
+def inner_loop(args, mat_func, all_models):
     all_exprs = []
     stats = []
     for ind, cur_model in enumerate(all_models):
@@ -102,16 +116,7 @@ def main(args):
         expression = expression.cpu().sympy()
         # expression_str = str(expression)
         all_exprs.append(expression)
-        # break
-    # save it as pkl file
-    cPickle.dump(all_exprs, open(args.predictions_file, 'wb'))
-
-    if args.timing_file is None:
-        timing_file = args.predictions_file.replace(".pkl", "_timing.json")
-    else:
-        timing_file = args.timing_file
-    with open(timing_file, "w") as f:
-        json.dump(stats, f)
+    return all_exprs, stats
 
 
 def params_to_geolipi(params, mode="sq"):
